@@ -199,6 +199,9 @@ function getUnitsFromKV (data) {
 }
 
 function getItemsFromKV (data) {
+  if (!data.DOTAItems) {
+    return [];
+  }
   return Object.keys(data.DOTAItems).filter(function (name) {
     if (name === 'values') {
       return false;
@@ -227,9 +230,9 @@ function getLuaPathsFromKV (data) {
     }
     return [];
   })
-  .reduce(function (memo, val) {
-    return memo.concat(val);
-  }, []);
+    .reduce(function (memo, val) {
+      return memo.concat(val);
+    }, []);
 }
 
 var hiddenModifiers = {};

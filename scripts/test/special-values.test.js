@@ -17,13 +17,14 @@ var stupidItemNames = [
   'item_halloween_candy_corn',
   'item_halloween_rapier',
   'item_firework_mine',
+  'sylph_sprite_shield',
   'nothing'
 ];
 
 var itemsFound = {};
 var idsFound = {};
 var itemFileMap = {};
-var nextAvailableId = 5000;
+var nextAvailableId = 8401;
 var usedIDs = {};
 
 test('KV Values', function (t) {
@@ -147,7 +148,7 @@ function testKVItem (t, root, isItem, fileName, cb, item) {
     if (!isBuiltIn && item !== 'item_dummy_datadriven') {
       t.ok(values.ID, 'must have an item id');
       t.ok(!isItem || values.ItemCost, 'non-built-in items must have prices');
-      t.ok(dotaItemIDs.indexOf(values.ID) === -1, 'cannot use an id used by dota');
+      t.ok(dotaItemIDs.indexOf(values.ID) === -1, 'cannot use an id used by dota ' + usedIDs[values.ID]);
 
       if (usedIDs[values.ID]) {
         t.fail('ID number is already in use by ' + usedIDs[values.ID]);
@@ -159,7 +160,7 @@ function testKVItem (t, root, isItem, fileName, cb, item) {
   itemsFound[item] = item;
   idsFound[values.ID] = item;
 
-  while (dotaItemIDs.indexOf(nextAvailableId) !== -1 || idsFound['' + nextAvailableId]) {
+  while (usedIDs[nextAvailableId] || idsFound['' + nextAvailableId]) {
     nextAvailableId += 1;
   }
 
@@ -195,8 +196,14 @@ function testKVItem (t, root, isItem, fileName, cb, item) {
   if (values.BaseClass) {
     if (isItem) {
       t.ok(dotaItems[values.BaseClass], 'base class ' + values.BaseClass + ' must be item_datadriven, item_lua, or a built in item');
+      if (dotaItems[values.BaseClass] && dotaItems[values.BaseClass].values && dotaItems[values.BaseClass].values.ID === values.ID) {
+        parentKV = dotaItems[values.BaseClass];
+      }
     } else {
       t.ok(dotaAbilities[values.BaseClass], 'base class ' + values.BaseClass + ' must be ability_datadriven, ability_lua, or a built in ability');
+      if (dotaAbilities[values.BaseClass] && dotaAbilities[values.BaseClass].values && dotaAbilities[values.BaseClass].values.ID === values.ID) {
+        parentKV = dotaAbilities[values.BaseClass];
+      }
     }
   } else {
     if (isItem) {
@@ -257,18 +264,24 @@ function checkInheritedValues (t, isItem, values, comments, parentValues) {
     'AbilityCastPoint',
     'AbilityChannelTime',
     'AbilityCooldown',
+    'AbilityDuration',
     'AbilityManaCost',
     'AbilityUnitTargetType',
-    'SpellImmunityType'
+    'AbilityUnitDamageType',
+    'SpellImmunityType',
+    'SpellDispellableType',
+    'ItemInitialCharges',
+    'ItemRequiresCharges',
+    'ItemDisplayCharges'
   ];
 
   if (values.AbilityBehavior && (!comments.AbilityBehavior || !comments.AbilityBehavior.includes('OAA'))) {
     t.equals(values.AbilityBehavior, parentValues.AbilityBehavior, 'AbilityBehavior must not be changed from base dota item');
   }
   keys.forEach(function (key) {
-    if (values[key] && parentValues[key] && (!comments[key] || !comments[key].includes('OAA'))) {
+    if (values[key] && (!comments[key] || !comments[key].includes('OAA'))) {
       var baseValue = '';
-      var parentValue = parentValues[key];
+      var parentValue = parentValues[key] || '';
 
       if (values[key].length < parentValue.length) {
         baseValue = parentValue.split(' ').map(function (entry) {
@@ -287,9 +300,9 @@ function checkInheritedValues (t, isItem, values, comments, parentValues) {
         }
         parentValue = parentArr.join(' ');
 
-        baseValue = values[key].substr(0, parentValue.length);
+        baseValue = values[key].substr(0, Math.max(1, parentValue.length, values[key].split(' ')[0].length));
       }
-      t.deepEqual(parentValue, baseValue, key + ' should inherit basic dota values (' + parentValue + ' vs ' + baseValue + ')');
+      t.deepEqual(baseValue, parentValue, key + ' should inherit basic dota values (' + parentValue + ' vs ' + baseValue + ')');
       // t.equals(values[key], parentValues[key], key + ' must not be changed from base dota item (' + parentValues[key] + ' vs ' + values[key] + ')');
     }
   });
@@ -320,10 +333,15 @@ function testSpecialValues (t, isItem, specials, parentSpecials) {
     var keyName = keyNames[0];
 
     if (parentSpecials && (!parentSpecials[num] || !parentSpecials[num].values[keyName])) {
-      if (!parentData[keyName]) {
+      if (specials.comments && specials.comments[num] && specials.comments[num].indexOf('OAA') !== -1) {
+        // do nothing
+      } else if (!parentData[keyName]) {
         t.fail('Extra keyname found in special values: ' + keyName);
+      } else if (!parentSpecials[num]) {
+        t.fail('Unexpected special value: ' + keyName);
       } else {
-        t.fail('special value in wrong order: ' + keyName);
+        var expectedName = filterExtraKeysFromSpecialValue(Object.keys(parentSpecials[num].values))[0];
+        t.fail('special value in wrong order: ' + keyName + ' should be ' + expectedName);
       }
     }
     if (parentData[keyName]) {
@@ -372,7 +390,7 @@ function testSpecialValues (t, isItem, specials, parentSpecials) {
   });
 
   Object.keys(parentData).forEach(function (name) {
-    t.ok(result[name], 'has value for ' + name);
+    t.ok(result[name], 'has value for ' + name + ' (' + parentData[name][name] + ', ' + parentData[name].var_type + ')');
   });
 
   return result;
@@ -400,6 +418,10 @@ function buildItemTree (t, data, cb) {
   t.test('item upgrade paths', function (t) {
     Object.keys(data).forEach(function (fileName) {
       var entry = data[fileName].DOTAItems;
+      if (!entry) {
+        t.fail('Could not find the DOTAItems entry for ' + fileName);
+        return;
+      }
       var itemNames = Object.keys(entry).filter(a => a !== 'values');
       itemNames.forEach(function (item) {
         var itemData = entry[item];
@@ -506,7 +528,7 @@ function buildItemTree (t, data, cb) {
         }
       });
 
-      if (upgradeCores.length) {
+      if (upgradeCores.length && !recipeData.comments.ItemRequirements.includes('OAA')) {
         var minCore = upgradeCores.reduce((a, b) => Math.min(a, b), 5);
         // console.log(item, 'is made with tier', minCore, 'items');
         for (var i = minCore; i < 5; ++i) {
