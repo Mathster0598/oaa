@@ -42,6 +42,7 @@
         "ItemCost"                      "100"
         "SecretShop"                    "1"
         "SecretShopType"                "Buildings"
+        "IsTempestDoubleClonable"       "0"
         // Special
         //-------------------------------------------------------------------------------------------------------------
         "AbilitySpecial"
@@ -54,7 +55,7 @@
             "02"
             {
                 "var_type"                  "FIELD_INTEGER"
-                "health"                    "1000 4000 8000 16000"
+                "health"                    "5000 20000 40000 80000"
             }
             "03"
             {
@@ -70,6 +71,11 @@
             {
                 "var_type"                  "FIELD_INTEGER"
                 "tooltip_damage"            "110 410 810 1610"
+            }
+            "06"
+            {
+                "var_type"                  "FIELD_INTEGER"
+                "sink_height"               "300"
             }
         }
         "precache"

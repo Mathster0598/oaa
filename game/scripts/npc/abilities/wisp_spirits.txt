@@ -19,7 +19,7 @@
 
     // Time
     //-------------------------------------------------------------------------------------------------------------
-    "AbilityCooldown"                                     "20.0 18.0 16.0 14.0 14.0 14.0"
+    "AbilityCooldown"                                     "26.0 22.0 18.0 14.0 14.0 14.0"
     "AbilityDuration"                                     "19.0"
 
     // Cost
@@ -37,9 +37,9 @@
 			}
 			"02"
 			{
-				"var_type"					"FIELD_INTEGER"
-				"hero_damage"				"25 50 75 100 325 550"
-				"LinkedSpecialBonus"		"special_bonus_unique_wisp"
+				"var_type"					   "FIELD_INTEGER"
+				"hero_damage"				   "20 40 60 80 260 420"
+				"LinkedSpecialBonus"	 "special_bonus_unique_wisp"
 			}
 			"03"
 			{

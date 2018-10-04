@@ -58,12 +58,12 @@
       "04"
       {
         "var_type"          "FIELD_INTEGER"
-        "targets"         "2 4 6 8 10 12"
+        "targets"         "8" //OAA
       }
       "05"
       {
-        "var_type"      "FIELD_INTEGER"
-        "damage"      "10 24 38 52 136 220"
+        "var_type"            "FIELD_INTEGER"
+        "damage"              "16 28 40 52 136 220"
         "LinkedSpecialBonus"  "special_bonus_unique_dazzle_3"
       }
       "06"
